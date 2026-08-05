@@ -1,1 +1,72 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web3 Investment Portal</title>
+    <!-- Import Ethers.js v5 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #0f172a; color: #fff; }
+        .card { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #334155; border-radius: 10px; background: #1e293b; }
+        input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: none; }
+        button { background: #3b82f6; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Vault Deposit Portal</h2>
+    <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+    <p id="walletAddress">Not connected</p>
+    <hr>
+    <h3>Invest</h3>
+    <input type="number" id="investAmount" placeholder="Amount in ETH" step="0.01">
+    <button onclick="deposit()">Deposit Funds</button>
+</div>
+
+<script>
+    const contractAddress = "YOUR_DEPLOYED_CONTRACT_ADDRESS_HERE";
+    const contractABI = [
+        "function deposit() external payable",
+        "function getBalance(address _investor) external view returns (uint256)"
+    ];
+
+    let provider, signer, contract;
+
+    async function connectWallet() {
+        if (window.ethereum) {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            const address = await signer.getAddress();
+            
+            document.getElementById("walletAddress").innerText = `Connected: ${address.substring(0,6)}...${address.substring(38)}`;
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+        } else {
+            alert("Please install MetaMask!");
+        }
+    }
+
+    async function deposit() {
+        if (!contract) return alert("Connect wallet first");
+        
+        const amount = document.getElementById("investAmount").value;
+        if (!amount) return alert("Enter an amount");
+
+        try {
+            const tx = await contract.deposit({
+                value: ethers.utils.parseEther(amount)
+            });
+            console.log("Transaction sent:", tx.hash);
+            await tx.wait();
+            alert("Investment Successful!");
+        } catch (error) {
+            console.error("Deposit failed:", error);
+        }
+    }
+</script>
+
+</body>
+</html>
